@@ -35,6 +35,7 @@ public class RealTimeAudioToText {
 	
 	private ArrayList<RequestThread> reqtArray = new ArrayList<RequestThread>();
 	private boolean stopCapture = false;
+
 	
 	public AudioFormat getAudioFormat() {
 	      float sampleRate = 16000;
@@ -83,7 +84,7 @@ public class RealTimeAudioToText {
 		  AudioFormat format = this.getAudioFormat();
 		  
 		  //have the byte buffer created
-		  byte tempBuffer[] = new byte[15000]; 
+		  byte tempBuffer[] = new byte[16000]; 
 		  
 		  //targetdataline helps us read the data into a buffer
 	      TargetDataLine targetDataLine;
@@ -92,6 +93,7 @@ public class RealTimeAudioToText {
 	    	  	targetDataLine.open();
 	    	  	//don't forget to start the microphone
 	    	  	targetDataLine.start();
+	    	  	//Speak when you see the microphone started printed!
 	    	  	System.out.println("microphone start");
 	      } catch (LineUnavailableException e) {
 			// TODO Auto-generated catch block
@@ -99,14 +101,12 @@ public class RealTimeAudioToText {
 			return;	
 	      }
 	      
-		  ResponseThread respt = new ResponseThread(responseObserver);
-		  respt.start();
 		  
-		  //call sleep thread (how long specified by sleep parameter
+		  //call sleep thread (how long specified by sleep parameter)
 		  AudioSleepThread ast = new AudioSleepThread(this, seconds);
 		  ast.start();
 		  
-		  while(!this.stopCapture) {
+		  while(targetDataLine!=null) {
 			//this method blocks
 			int cnt = targetDataLine.read(tempBuffer, 0, tempBuffer.length);
 			if (cnt>0) {
@@ -115,46 +115,37 @@ public class RealTimeAudioToText {
 				  reqt.start();
 				  //Add it to array list
 				  this.reqtArray.add(reqt);
+				  responseObserver.onCompleted();
 			}
+			//thread will set this to stop
+			if (this.getStopCapture()) {break;}
 		  }
-		  
-
-		  
 		  
 		  //Make sure that each request thread is finished before moving on
 		  for (RequestThread reqt : this.reqtArray) {
 			  reqt.join();
 		  }
 		  
-		  
-		  /*
-		  //Make sure that each response thread is finished before moving on. If I wait for response thread to finish nothing gets printed out
-		  for (ResponseThread respt: this.resptArray) {
-			  respt.join();
-		  }*/
-		  
 		  requestObserver.onCompleted();
-
-		  respt.join();
-		  
-		  responseObserver.onCompleted();
-
-		  
+		  		  
 	      if (targetDataLine != null) {
 	          targetDataLine.drain();
 	          targetDataLine.close();
 	      }
-	      
+ 
 		  speech.close();
 	}
 	
-	public void setStopCapture(boolean b) {
+	public synchronized boolean getStopCapture() {
+		return this.stopCapture;
+	}
+	public synchronized void setStopCapture(boolean b) {
 		this.stopCapture = b;
 	}
 	
 	public static void main(String... args) throws Exception {
 		RealTimeAudioToText rtatt = new RealTimeAudioToText();
-		rtatt.streamingRecognize(4000);
+		rtatt.streamingRecognize(40000);
 	}
 }
 

@@ -14,7 +14,7 @@ public class RequestThread extends Thread {
 	  }
 	  
 	  public synchronized void synchronizedWrite(byte tempBuffer[]) {
-		  System.out.println("Sync writing tempBuffer " + tempBuffer);
+		  //System.out.println("Sync writing tempBuffer " + tempBuffer);
           this.requestObserver.onNext(StreamingRecognizeRequest.newBuilder()
 			      .setAudioContent(ByteString.copyFrom(tempBuffer))
 			      .build());
